@@ -40,6 +40,7 @@
         path (get-user-data-path base)]
     (println "~ Writing" path)
     (let [[new-items current-items] (feed/fetch-and-parse-reddits now reddits last-feed)]
+      (digest/send-mail {:to "jakub.stastny.pt+reddit@gmail.com" :subject "Hey" :body "Test"})
       (digest/send-digest now new-items)
 
       (with-open [writter (io/writer (io/file path))]

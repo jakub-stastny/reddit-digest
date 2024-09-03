@@ -11,7 +11,7 @@ Reddit digest fetches RSS from subreddits of interests and send them regularly i
 * Run
 
 #+begin_src sh
-  clojure -M:run
+  GMAIL_CREDS='you@gmail.com:your-pass' clojure -M:run
 #+end_src
 
 * Links
