@@ -1,0 +1,17 @@
+* About
+
+Reddit digest fetches RSS from subreddits of interests and send them regularly in an email digest.
+
+# It's meant to run with cron from Tuesday to Sunday at 9 AM:
+
+#+begin_src cron
+  0 9 * * 2-7 /path/to/my-script.sh
+#+end_src
+
+* Run
+
+#+begin_src sh
+  clojure -M:run
+#+end_src
+
+* Links
