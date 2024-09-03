@@ -2,16 +2,22 @@
   (:require [clojure.string :as str]
             [clj-http.client :as http]))
 
-(defn send-push-notifications [new-items]
+(def pushover-api-endpoint "https://api.pushover.net/1/messages.json")
+
+(defn get-creds []
+  (if-let [creds-str (System/getenv "PUSHOVER_CREDS")]
+    (apply hash-map (interleave [:user :token] (str/split creds-str #":")))
+    (throw (ex-info "PUSHOVER_CREDS env var missing" {}))))
+
+(defn send-pushover-notification [title message]
+  (println "~ [PushOver]" title "→" message)
+  (let [params (merge (get-creds) {:title title :message message})]
+    (http/post pushover-api-endpoint {:form-params params})))
+
+;; TODO: This is where we should strip tags and limit length,
+;; not before.
+(defn send-pushover-notifications [new-items]
   (doseq [item new-items]
-    (prn :i item)))
-
-;; (defn send-pushover-notification [title message]
-;;   (http/post "https://api.pushover.net/1/messages.json"
-;;                {:form-params {:token "your-api-token"
-;;                               :user "your-user-key"
-;;                               :title title
-;;                               :message message}}))
-
-;; ;; Example usage
-;; (send-pushover-notification "Test Notification" "This is a test message sent to your Mac/iOS device.")
+    (let [title (str (:author item) ": " (:title item))
+          message (:content item)]
+      (send-pushover-notification title message))))

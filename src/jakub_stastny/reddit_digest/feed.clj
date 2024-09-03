@@ -94,7 +94,7 @@
 ;; One top-level file.
 (defn fetch-and-parse-reddits [now reddits last-feed]
   ;; TODO: How am I going to get new-items?
-  (let [new-items [1]
+  (let [new-items [{:author "JS" :title "Test" :content "Lorem ipsum"}]
         current-items
         {:fetch-time now :reddits (into {} (map #(process-reddit now % (or (get-in last-feed [:reddits %]) {})) reddits))}]
     [new-items current-items]))

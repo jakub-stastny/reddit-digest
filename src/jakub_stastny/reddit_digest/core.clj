@@ -40,7 +40,7 @@
         path (get-user-data-path base)]
     (println "~ Writing" path)
     (let [[new-items current-items] (feed/fetch-and-parse-reddits now reddits last-feed)]
-      (notifier/send-push-notifications new-items)
+      (notifier/send-pushover-notifications new-items)
 
       (with-open [writter (io/writer (io/file path))]
         (pprint current-items writter)))))
