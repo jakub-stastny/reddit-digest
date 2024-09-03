@@ -15,3 +15,5 @@ Reddit digest fetches RSS from subreddits of interests and send them regularly i
 #+end_src
 
 * Links
+
+- [[https://www.reddit.com/r/reddit.com/wiki/rss/][Reddit RSS]].

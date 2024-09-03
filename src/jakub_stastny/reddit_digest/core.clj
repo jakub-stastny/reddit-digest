@@ -5,7 +5,7 @@
             [babashka.fs :as fs]
             [clojure.java.io :as io]
             [jakub-stastny.reddit-digest.feed :as feed]
-            [jakub-stastny.reddit-digest.digest :as digest])
+            [jakub-stastny.reddit-digest.notifier :as notifier])
   (:import [java.time Instant])
   (:gen-class))
 
@@ -40,8 +40,7 @@
         path (get-user-data-path base)]
     (println "~ Writing" path)
     (let [[new-items current-items] (feed/fetch-and-parse-reddits now reddits last-feed)]
-      (digest/send-mail {:to "jakub.stastny.pt+reddit@gmail.com" :subject "Hey" :body "Test"})
-      (digest/send-digest now new-items)
+      (notifier/send-push-notifications new-items)
 
       (with-open [writter (io/writer (io/file path))]
         (pprint current-items writter)))))
