@@ -1,8 +1,11 @@
 (ns jakub-stastny.reddit-digest.core
   (:require [clojure.string :as str]
             [clojure.pprint :refer [pprint]]
+            [clojure.edn :as edn]
+            [babashka.fs :as fs]
             [clojure.java.io :as io]
-            [jakub-stastny.reddit-digest.feed :as feed])
+            [jakub-stastny.reddit-digest.feed :as feed]
+            [jakub-stastny.reddit-digest.digest :as digest])
   (:import [java.time Instant])
   (:gen-class))
 
@@ -11,30 +14,36 @@
 (def app-name
   (str/join "." (butlast (str/split (str (ns-name *ns*)) #"\."))))
 
-;; $XDG_DATA_HOME defaults to ~/.local/share.
-(def xdg-data-home
-  (or (System/getenv "XDG_DATA_HOME")
-      (str (System/getProperty "user.home") "/.local/share")))
-
+;; ~/.cache/jakub-stastny.reddit-digest
 (def app-data-home
-  (str xdg-data-home "/" app-name))
+  (fs/xdg-cache-home app-name))
 
 (defn get-user-data-path [relative-path]
   (str app-data-home "/" relative-path))
 
-(defn ensure-directory-exists [dir]
-  (let [file (io/file dir)]
-    (when-not (.exists file)
-      (io/make-parents file)
-      (.mkdir file))))
+(defn get-feeds []
+  (sort (fs/glob app-data-home "feed.*.edn")))
+
+(defn manage-feeds []
+  (let [feeds-for-deletion (butlast (get-feeds))]
+    (doseq [feed feeds-for-deletion]
+      (fs/delete feed))))
+
+(defn get-last-feed []
+  (last (get-feeds)))
 
 (defn save [now reddits]
-  (ensure-directory-exists app-data-home)
-  (let [base (str "feeds." (.getEpochSecond now) ".edn")
+  (fs/create-dirs app-data-home)
+  (manage-feeds)
+  (let [last-feed (edn/read-string (slurp (str (get-last-feed))))
+        base (str "feed." (.getEpochSecond now) ".edn")
         path (get-user-data-path base)]
     (println "~ Writing" path)
-    (with-open [w (io/writer (io/file path))]
-      (pprint (feed/fetch-and-parse-reddits now reddits) w))))
+    (let [[new-items current-items] (feed/fetch-and-parse-reddits now reddits last-feed)]
+      (digest/send-digest now new-items)
+
+      (with-open [writter (io/writer (io/file path))]
+        (pprint current-items writter)))))
 
 (defn help []
   (println app-name)

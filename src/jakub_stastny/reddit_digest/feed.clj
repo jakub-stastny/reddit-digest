@@ -68,28 +68,32 @@
 
 ;; This runs only once in this case (on the feed tag which is akin to the html tag).
 ;; We only filter entries now, other tags have more channel-specific info.
-(defn xml->map [now node]
+(defn xml->map [now node last-fetch]
+  ;; TODO: Last fetch diff
   (vec (process-entries now (filter #(= (:tag %) :entry) (xml-element->map (:content node))))))
 
-(defn parse-atom-feed [now xml-content]
-  (xml->map now (xml/parse-str xml-content)))
+(defn parse-atom-feed [now xml-content last-fetch]
+  (xml->map now (xml/parse-str xml-content) last-fetch))
 
-(defn xml-to-edn [now xml-content]
-  (parse-atom-feed now xml-content))
+(defn xml-to-edn [now xml-content last-fetch]
+  (parse-atom-feed now xml-content last-fetch))
 
 (defn fetch-atom-feed [url]
   (let [response (http/get url {:headers {"User-Agent" user-agent}})]
     (:body response)))
 
-(defn fetch-and-parse-atom [now url]
-  (xml-to-edn now (fetch-atom-feed url)))
+(defn fetch-and-parse-atom [now url last-fetch]
+  (xml-to-edn now (fetch-atom-feed url) last-fetch))
 
 (defn reddit-url [reddit]
   (str "https://www.reddit.com/" reddit "/.rss"))
 
-(defn- process-reddit [now reddit]
-  [reddit (fetch-and-parse-atom now (reddit-url reddit))])
+(defn- process-reddit [now reddit last-fetch]
+  [reddit (fetch-and-parse-atom now (reddit-url reddit) last-fetch)])
 
 ;; One top-level file.
-(defn fetch-and-parse-reddits [now reddits]
-  {:fetch-time now :reddits (into {} (map #(process-reddit now %) reddits))})
+(defn fetch-and-parse-reddits [now reddits last-feed]
+  (let [new-items []
+        current-items
+        {:fetch-time now :reddits (into {} (map #(process-reddit now % (get-in last-feed [:reddits %])) reddits))}]
+    [new-items current-items]))
