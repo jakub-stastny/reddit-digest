@@ -85,7 +85,7 @@
   (xml-to-edn now (fetch-atom-feed url)))
 
 (defn reddit-url [reddit]
-  (str "https://www.reddit.com/r/" (name reddit) "/.rss"))
+  (str "https://www.reddit.com/" reddit "/.rss"))
 
 (defn- process-reddit [now reddit]
   [reddit (fetch-and-parse-atom now (reddit-url reddit))])
