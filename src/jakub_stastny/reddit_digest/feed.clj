@@ -1,20 +1,14 @@
 (ns jakub-stastny.reddit-digest.feed
   (:require [clojure.string :as str]
-            [clojure.pprint :refer [pprint]]
             [clj-http.client :as http]
             [clojure.data.xml :as xml]
-            [clojure.zip :as zip]
-            [clojure.xml :as xml-parser]
-            [clojure.data.zip.xml :as dz]
-            [clojure.edn :as edn])
+            [jakub-stastny.reddit-digest.config :as config])
   (:import [java.time Instant]
            [java.time.format DateTimeFormatter]))
 
 ;; Custom print-method for java.time.Instant
 (defmethod print-method java.time.Instant [inst ^java.io.Writer w]
   (.write w (str "#inst \"" (.toString inst) "\"")))
-
-(def user-agent (str (ns-name *ns*) "/1.0"))
 
 (defn one-or-many [data]
   (if (and (vector? data) (= (count data) 1))
@@ -38,28 +32,15 @@
 (defn find-tag [items tag-name]
   (first (filter #(= (:tag %) tag-name) items)))
 
-(defn html-to-text [html]
-  (-> html
-      (str/replace #"<!--.*?-->" "") ;; Remove comments
-      (str/replace #"<[^>]+>" "")))  ;; Remove HTML tags
-
-(defn truncate-text [text max-length]
-  (if (<= (count text) max-length)
-    text
-    (let [truncated (subs text 0 max-length)
-          last-space (or (str/last-index-of truncated " ") max-length)]
-      (subs text 0 last-space))))
-
 (defn process-entry [entry]
   (let [data (:content entry)
         author-tag (find-tag data :author)
         author-name (:content (find-tag (:content author-tag) :name))
         content (:content (find-tag data :content))
-        truncated-content (truncate-text (html-to-text content) 350)
         published-date (:content (find-tag data :published))
         title (:content (find-tag data :title))
         link (:href (:attrs (find-tag data :link)))]
-    {:title title :link link :author author-name :published-date (Instant/parse published-date) :content truncated-content}))
+    {:title title :link link :author author-name :published-date (Instant/parse published-date) :content content}))
 
 (defn process-entries [now entries]
   ;; Filter only items published in the last 3 days.
@@ -79,7 +60,7 @@
   (parse-atom-feed now xml-content last-fetch))
 
 (defn fetch-atom-feed [url]
-  (let [response (http/get url {:headers {"User-Agent" user-agent}})]
+  (let [response (http/get url {:headers {"User-Agent" config/user-agent}})]
     (:body response)))
 
 (defn fetch-and-parse-atom [now url last-fetch]
@@ -92,9 +73,9 @@
   [reddit (fetch-and-parse-atom now (reddit-url reddit) last-fetch)])
 
 ;; One top-level file.
-(defn fetch-and-parse-reddits [now reddits last-feed]
+(defn fetch-and-parse-reddits [now last-feed]
   ;; TODO: How am I going to get new-items?
   (let [new-items [{:author "JS" :title "Test" :content "Lorem ipsum"}]
         current-items
-        {:fetch-time now :reddits (into {} (map #(process-reddit now % (or (get-in last-feed [:reddits %]) {})) reddits))}]
+        {:fetch-time now :reddits (into {} (map #(process-reddit now % (or (get-in last-feed [:reddits %]) {})) config/reddits))}]
     [new-items current-items]))
