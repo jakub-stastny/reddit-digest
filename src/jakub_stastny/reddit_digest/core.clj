@@ -32,7 +32,9 @@
   (delete-all-but-last-feed)
 
   (let [last-feed-path (last (get-feeds))
+        _ (prn :x last-feed-path)
         last-feed-data (when last-feed-path (edn/read-string (slurp last-feed-path)))
+        _ (prn :x)
         base (str "feed." (.getEpochSecond now) ".edn")
         path (get-user-data-path base)]
     (prn :now now :last-feed last-feed-data) ;;;

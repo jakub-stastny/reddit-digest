@@ -23,8 +23,9 @@
 
 (defn send-pushover-notification [title message]
   (println "~ [PushOver]" title "→" message)
-  (let [params (merge (get-pushover-creds) {:title title :message message})]
-    (http/post pushover-api-endpoint {:form-params params})))
+  (let [params (merge (get-pushover-creds) {:title title :message message})
+        request (http/post pushover-api-endpoint {:form-params params})]
+    (prn :req request)))
 
 (defn send-pushover-notifications [new-items]
   (doseq [item new-items]
