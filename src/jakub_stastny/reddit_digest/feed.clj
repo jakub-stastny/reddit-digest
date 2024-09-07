@@ -3,8 +3,7 @@
             [clj-http.client :as http]
             [clojure.data.xml :as xml]
             [jakub-stastny.reddit-digest.config :as config])
-  (:import [java.time Instant]
-           [java.time.format DateTimeFormatter]))
+  (:import [java.time Instant]))
 
 ;; Custom print-method for java.time.Instant
 (defmethod print-method java.time.Instant [inst ^java.io.Writer w]

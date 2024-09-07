@@ -10,22 +10,25 @@
   (:import [java.time Instant])
   (:gen-class))
 
+;; Custom print-method for java.time.Instant
+(defmethod print-method java.time.Instant [inst ^java.io.Writer w]
+  (.write w (str "#inst \"" (.toString inst) "\"")))
+
 (defn get-user-data-path [relative-path]
-  (str config/app-data-home "/" relative-path))
+  (str (config/app-data-home) "/" relative-path))
 
 (defn get-feeds []
-  (sort (fs/glob config/app-data-home "feed.*.edn")))
+  (sort (fs/glob (config/app-data-home) "feed.*.edn")))
 
 (defn delete-all-but-last-feed []
   (let [feeds-for-deletion (butlast (get-feeds))]
     (doseq [feed feeds-for-deletion]
       (fs/delete feed))))
 
-;; TODO: macOS: install PushOver
-;; Use feed1+feed2+feed3.
-;; Use spec?
+;; ;; Use feed1+feed2+feed3.
+;; ;; Use spec?
 (defn process [now]
-  (fs/create-dirs config/app-data-home)
+  (fs/create-dirs (config/app-data-home))
   (delete-all-but-last-feed)
 
   (let [last-feed-path (last (get-feeds))
@@ -42,11 +45,11 @@
         (pprint current-items writter)))))
 
 (defn help []
-  (println config/app-name)
+  (println (config/app-name))
   (println)
   (println "No arguments expected, all the configuration is hard-coded.")
   (println "You are currently monitoring the following Reddits:")
-  (prn reddits)
+  (prn config/reddits)
   (System/exit 1))
 
 (defn -main [& args]

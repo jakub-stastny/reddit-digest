@@ -2,7 +2,6 @@
   (:require [clojure.string :as str]
             [clj-http.client :as http]))
 
-;; truncated-content (truncate-text (html-to-text content) 350)
 (defn html-to-text [html]
   (-> html
       (str/replace #"<!--.*?-->" "") ;; Remove comments
@@ -24,11 +23,12 @@
 
 (defn send-pushover-notification [title message]
   (println "~ [PushOver]" title "→" message)
-  (let [params (merge (get-creds) {:title title :message message})]
+  (let [params (merge (get-pushover-creds) {:title title :message message})]
     (http/post pushover-api-endpoint {:form-params params})))
 
 (defn send-pushover-notifications [new-items]
   (doseq [item new-items]
     (let [title (str (:author item) ": " (:title item))
-          message (:content item)]
+          content (:content item)
+          message (truncate-text (html-to-text content) 350)]
       (send-pushover-notification title message))))
