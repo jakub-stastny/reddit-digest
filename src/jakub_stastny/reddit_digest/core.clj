@@ -31,8 +31,9 @@
   (fs/create-dirs (config/app-data-home))
   (delete-all-but-last-feed)
 
-  (let [last-feed-path (str (last (get-feeds)))
-        last-feed-data (when last-feed-path (edn/read-string (slurp last-feed-path)))
+  (let [last-feed-path (last (get-feeds))
+        last-feed-path-str-or-nil (when last-feed-path (str last-feed-path))
+        last-feed-data (when last-feed-path (edn/read-string (slurp last-feed-path-str-or-nil)))
         base (str "feed." (.getEpochSecond now) ".edn")
         path (get-user-data-path base)]
     (let [[new-items current-items] (feed/fetch-and-parse-reddits now last-feed-data)]

@@ -37,7 +37,6 @@
         link (:href (:attrs (find-tag data :link)))]
     {:title title :link link :author author-name :published-date (Instant/parse published-date) :content content}))
 
-
 (defn return-entry-if-published-in-last-3-days [now entry]
   (when entry ;; the first return-entry-* function can return nil.
     (let [current-timestamp (.getEpochSecond now)
@@ -49,11 +48,17 @@
   (when-not (contains? (set (map :link last-fetch)) (:link entry))
     entry))
 
-;; Here though we need to return new AND current items.
-(defn process-entries [now entries last-fetch]
+(defn process-new-entries [now entries last-fetch]
   (filter (comp (partial return-entry-if-published-in-last-3-days now)
                 (partial return-entry-if-not-in-last-fetch now last-fetch))
           (map process-entry entries)))
+
+;; Here though we need to return new AND current items.
+(defn process-entries [now entries last-fetch]
+  (let [new-entries (process-new-entries now entries last-fetch)]
+    (prn :lf last-fetch)
+    ;; TODO: Filter only if last ... 3(?) days.
+    [new-entries, (into last-fetch new-entries)]))
 
 ;; This runs only once in this case (on the feed tag which is akin to the html tag).
 ;; We only filter entries now, other tags have more channel-specific info.
