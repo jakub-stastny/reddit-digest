@@ -5,10 +5,6 @@
             [jakub-stastny.reddit-digest.config :as config])
   (:import [java.time Instant]))
 
-;; Custom print-method for java.time.Instant
-(defmethod print-method java.time.Instant [inst ^java.io.Writer w]
-  (.write w (str "#inst \"" (.toString inst) "\"")))
-
 (defn one-or-many [data]
   (if (and (vector? data) (= (count data) 1))
     (get data 0)
@@ -41,16 +37,28 @@
         link (:href (:attrs (find-tag data :link)))]
     {:title title :link link :author author-name :published-date (Instant/parse published-date) :content content}))
 
-(defn process-entries [now entries]
-  ;; Filter only items published in the last 3 days.
-  (filter #(< (- (.getEpochSecond now) (.getEpochSecond (:published-date %))) (* 3 24 60 60))
+
+(defn return-entry-if-published-in-last-3-days [now entry]
+  (when entry ;; the first return-entry-* function can return nil.
+    (let [current-timestamp (.getEpochSecond now)
+          entry-published-date-timestamp (.getEpochSecond (:published-date entry))]
+      (when (< (- current-timestamp entry-published-date-timestamp) (* 3 24 60 60))
+        entry))))
+
+(defn return-entry-if-not-in-last-fetch [now last-fetch entry]
+  (when-not (contains? (set (map :link last-fetch)) (:link entry))
+    entry))
+
+;; Here though we need to return new AND current items.
+(defn process-entries [now entries last-fetch]
+  (filter (comp (partial return-entry-if-published-in-last-3-days now)
+                (partial return-entry-if-not-in-last-fetch now last-fetch))
           (map process-entry entries)))
 
 ;; This runs only once in this case (on the feed tag which is akin to the html tag).
 ;; We only filter entries now, other tags have more channel-specific info.
 (defn xml->map [now node last-fetch]
-  ;; TODO: Last fetch diff
-  (vec (process-entries now (filter #(= (:tag %) :entry) (xml-element->map (:content node))))))
+  (vec (process-entries now (filter #(= (:tag %) :entry) (xml-element->map (:content node))) last-fetch)))
 
 (defn parse-atom-feed [now xml-content last-fetch]
   (xml->map now (xml/parse-str xml-content) last-fetch))
@@ -71,10 +79,11 @@
 (defn- process-reddit [now reddit last-fetch]
   [reddit (fetch-and-parse-atom now (reddit-url reddit) last-fetch)])
 
-;; One top-level file.
+(defn get-reddits [now last-feed]
+  (into {} (map #(process-reddit now % (or (get-in last-feed [:reddits %]) {})) config/reddits)))
+
 (defn fetch-and-parse-reddits [now last-feed]
-  ;; TODO: How am I going to get new-items?
-  (let [new-items [{:author "JS" :title "Test" :content "Lorem ipsum"}]
-        current-items
-        {:fetch-time now :reddits (into {} (map #(process-reddit now % (or (get-in last-feed [:reddits %]) {})) config/reddits))}]
+  (let [reddits (get-reddits now last-feed)
+        new-items [{:author "JS" :title "Test" :content "Lorem ipsum"}] ;;;;
+        current-items {:fetch-time now :reddits reddits}]
     [new-items current-items]))

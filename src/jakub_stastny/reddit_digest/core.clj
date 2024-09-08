@@ -31,15 +31,11 @@
   (fs/create-dirs (config/app-data-home))
   (delete-all-but-last-feed)
 
-  (let [last-feed-path (last (get-feeds))
-        _ (prn :x last-feed-path)
+  (let [last-feed-path (str (last (get-feeds)))
         last-feed-data (when last-feed-path (edn/read-string (slurp last-feed-path)))
-        _ (prn :x)
         base (str "feed." (.getEpochSecond now) ".edn")
         path (get-user-data-path base)]
-    (prn :now now :last-feed last-feed-data) ;;;
     (let [[new-items current-items] (feed/fetch-and-parse-reddits now last-feed-data)]
-      (prn :new-items new-items :current current-items) ;;;
       (notifier/send-pushover-notifications new-items)
 
       (println "~ Writing" path)
