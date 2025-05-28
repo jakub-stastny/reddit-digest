@@ -56,9 +56,11 @@
 ;; Here though we need to return new AND current items.
 (defn process-entries [now entries last-fetch]
   (let [new-entries (process-new-entries now entries last-fetch)]
-    (prn :lf last-fetch)
     ;; TODO: Filter only if last ... 3(?) days.
-    [new-entries, (into last-fetch new-entries)]))
+    ;; (prn :ne new-entries)
+    ;; (prn :lf last-fetch)
+    (prn :res (into last-fetch new-entries))
+    [new-entries (into last-fetch new-entries)]))
 
 ;; This runs only once in this case (on the feed tag which is akin to the html tag).
 ;; We only filter entries now, other tags have more channel-specific info.
@@ -85,7 +87,7 @@
   [reddit (fetch-and-parse-atom now (reddit-url reddit) last-fetch)])
 
 (defn get-reddits [now last-feed]
-  (into {} (map #(process-reddit now % (or (get-in last-feed [:reddits %]) {})) config/reddits)))
+  (into {} (map #(process-reddit now % (or (get-in last-feed [:reddits %]) [])) config/reddits)))
 
 (defn fetch-and-parse-reddits [now last-feed]
   (let [reddits (get-reddits now last-feed)
